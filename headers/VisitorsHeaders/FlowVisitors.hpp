@@ -53,7 +53,6 @@ class DFS_BFS_Dinic : public DFSVisitor<CurGraph>, public BFSVisitor<CurGraph> {
   bool discover_vertex_DFS(DFSVisitor<CurGraph>::vert_desc top, DFSVisitor<CurGraph>::graph_type &graph) {
     std::cerr << "discover_vertex_DFS = " << top << " top == end = " << (top == end) << "\n";
     if (top == end) {
-      //exit(-1);
       return true;
     }
     flow = stack_DFS.back();
@@ -227,6 +226,7 @@ DFSFordFulkerson<CurGraph>::flow_type DFSFordFulkerson<CurGraph>::FordFUlkerson(
     graph.template DFS<my_type>(source, *this);
     flow = stack_DFS.back();
     if (!EndAlgorim) break;
+    std::cerr << "flow = " << flow << "\n";
     max_flow += flow;
     stack_DFS.clear();
   } while (true);

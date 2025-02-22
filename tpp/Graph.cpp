@@ -2,18 +2,18 @@
 // Created by catboy on 2/17/2025.
 //
 
-
-template<typename CurGraphStorage>
-void Graph<CurGraphStorage>::foo() {
-  std::cout << 5;
-}
-
 //template<typename CurGraphStorage, std::enable_if_t<std::is_base_of_v<GraphStorage<typename CurGraphStorage::edges_type>, CurGraphStorage>, bool>>
 template<typename CurGraphStorage>
 template<typename... Args>
 void Graph<CurGraphStorage>::AddEdge(int f, int s, Args &&... construct_args) {
   storage.AddEdge(f, s, construct_args...); //std::forward realize
 }
+
+template<typename CurGraphStorage>
+void Graph<CurGraphStorage>::AddEdge(int f, int s, weight_type weight) {
+  storage.AddEdge(f, s, weight); //std::forward realize
+}
+
 
 template<typename CurGraphStorage>
 template<typename CurDFSVisitor>
@@ -49,23 +49,22 @@ void Graph<CurGraphStorage>::DFSRecr(int begin_top, CurDFSVisitor &visitor) {
   near_top_iter_begin = storage.BeginEdges(begin_top);
   near_top_iter_end = storage.EndEdges(begin_top);
   while ((near_top_iter_begin != near_top_iter_end)) {
-    //std::cerr << std::distance(near_top_iter_begin, near_top_iter_end) << "\n";
+    int index_vert_from_iter = storage.GetIndexVertex(near_top_iter_begin);
+
     if (storage.GetColor(near_top_iter_begin) == 0) {
-      if (visitor.tree_edge_DFS({begin_top, storage.GetIndexVertex(near_top_iter_begin)}, near_top_iter_begin, *this)) {
-        //std::cerr << std::distance(near_top_iter_begin, near_top_iter_end) << "\n";
+      if (visitor.tree_edge_DFS({begin_top, index_vert_from_iter}, near_top_iter_begin, *this)) {
         near_top_iter_begin++;
-        //std::cerr << std::distance(near_top_iter_begin, near_top_iter_end) << "\n";
         continue;
       }
-      DFSRecr(storage.GetIndexVertex(near_top_iter_begin), visitor);
-      if (visitor.finish_edge({begin_top, storage.GetIndexVertex(near_top_iter_begin)}, near_top_iter_begin, *this)) {
+      DFSRecr(index_vert_from_iter, visitor);
+      if (visitor.finish_edge({begin_top, index_vert_from_iter}, near_top_iter_begin, *this)) {
         return;
       }
 
     } else if (storage.GetColor(near_top_iter_begin) == 1) {
-      visitor.back_edge({begin_top, storage.GetIndexVertex(near_top_iter_begin)}, near_top_iter_begin, *this);
+      visitor.back_edge({begin_top, index_vert_from_iter}, near_top_iter_begin, *this);
     } else {
-      visitor.forward_or_cross_edge({begin_top, storage.GetIndexVertex(near_top_iter_begin)},
+      visitor.forward_or_cross_edge({begin_top, index_vert_from_iter},
                                     near_top_iter_begin,
                                     *this);
     }
@@ -108,20 +107,22 @@ void Graph<CurGraphStorage>::BFSRecr(int begin_top, CurBFSVisitor &visitor) {
   near_top_iter_begin = storage.BeginEdges(begin_top);
   near_top_iter_end = storage.EndEdges(begin_top);
   while ((near_top_iter_begin != near_top_iter_end)) {
+    int index_vert_from_iter = storage.GetIndexVertex(near_top_iter_begin);
+
     if (storage.GetColor(near_top_iter_begin) == 0) {
-      visitor.tree_edge_BFS({begin_top, storage.GetIndexVertex(near_top_iter_begin)},
+      visitor.tree_edge_BFS({begin_top, index_vert_from_iter},
                             near_top_iter_begin,
                             *this); //TODO: делать bool
       if (storage.GetColor(near_top_iter_begin) == 0) {
         storage.GetColor(near_top_iter_begin) = 1;
-        bfs_deq.emplace_back(begin_top, storage.GetIndexVertex(near_top_iter_begin));
+        bfs_deq.emplace_back(begin_top, index_vert_from_iter);
       }
     } else {
-      visitor.non_tree_edge({begin_top, storage.GetIndexVertex(near_top_iter_begin)}, near_top_iter_begin, *this);
+      visitor.non_tree_edge({begin_top, index_vert_from_iter}, near_top_iter_begin, *this);
       if (storage.GetColor(near_top_iter_begin) == 1) {
-        visitor.gray_target(storage.GetIndexVertex(near_top_iter_begin), *this);
+        visitor.gray_target(index_vert_from_iter, *this);
       } else {
-        visitor.black_target(storage.GetIndexVertex(near_top_iter_begin), *this);
+        visitor.black_target(index_vert_from_iter, *this);
       }
     }
     near_top_iter_begin++;
@@ -145,13 +146,13 @@ void Graph<CurGraphStorage>::Dejkstra(int begin_top, CurDejkstraVisitor &visitor
   static_assert(std::is_base_of_v<DejkstraVisitor<Graph<CurGraphStorage>>, CurDejkstraVisitor>);
 
   storage.ConstructColor();
-  storage.ConstructDeep();
+  storage.ConstructDepth();
   storage.ConstructPredecessor();
   for (std::size_t i = 0; i < storage.size(); i++) {
     visitor.initialize_vertex_Dejkstra(i, *this);
   }
   storage.GetColor(begin_top) = 1;
-  storage.GetDeep(begin_top) = 0;
+  storage.GetDepth(begin_top) = 0;
   if (visitor.discover_vertex_Dejkstra(begin_top, *this)) return;
   std::priority_queue<std::pair<int, int>> dist_queue;
 
@@ -162,38 +163,35 @@ void Graph<CurGraphStorage>::Dejkstra(int begin_top, CurDejkstraVisitor &visitor
     dist_queue.pop();
     int v_vert = v_pair.second;
     int v_dist = -v_pair.first;
-    std::cerr << " vert = " << v_vert << " dist = " << v_dist << "\n";
-    if (storage.GetDeep(v_vert) < v_dist) {
+    int deep_v_vert = storage.GetDepth(v_vert);
+
+    if (deep_v_vert < v_dist) {
       std::cerr << "continue\n";
       continue;
-    } else if (storage.GetDeep(v_vert) > v_dist) {
+    } else if (deep_v_vert > v_dist) {
       std::cerr << "EEEEEEEERRRRRRRRRRRRRRRRROOOOOOOOOOOOOOOORRRRRRRRRRR\n";
     }
     visitor.examine_vertex_Dejkstra(v_dist, *this);
     auto near_top_iter_begin = storage.BeginEdges(v_vert);
     auto near_top_iter_end = storage.EndEdges(v_vert);
     while ((near_top_iter_begin != near_top_iter_end)) {
-      visitor.examine_edge_Dejkstra({begin_top, storage.GetIndexVertex(near_top_iter_begin)},
+      int index_vert_from_iter = storage.GetIndexVertex(near_top_iter_begin);
+      visitor.examine_edge_Dejkstra({begin_top, index_vert_from_iter},
                                     near_top_iter_begin,
                                     *this);
 
-      std::cerr << " vert_to = ";
-      std::cerr << storage.GetIndexVertex(near_top_iter_begin) << "weight = ";
-      std::cerr << (GetWeightFromIter(near_top_iter_begin));
-      std::cerr << " deep = " << storage.GetDeep(near_top_iter_begin) << "\n";
-
-      if (GetWeightFromIter(near_top_iter_begin) + v_dist < storage.GetDeep(near_top_iter_begin)) {
-        storage.GetDeep(near_top_iter_begin) = GetWeightFromIter(near_top_iter_begin) + v_dist;
+      if (GetWeightFromIter(near_top_iter_begin) + v_dist < storage.GetDepth(near_top_iter_begin)) {
+        storage.GetDepth(near_top_iter_begin) = GetWeightFromIter(near_top_iter_begin) + v_dist;
         storage.GetPredecessor(near_top_iter_begin) = v_vert;
-        visitor.edge_relaxed({begin_top, storage.GetIndexVertex(near_top_iter_begin)}, near_top_iter_begin, *this);
+        visitor.edge_relaxed({begin_top, index_vert_from_iter}, near_top_iter_begin, *this);
         dist_queue.push({-(v_dist + GetWeightFromIter(near_top_iter_begin)),
-                         storage.GetIndexVertex(near_top_iter_begin)});
+                         index_vert_from_iter});
         if (storage.GetColor(near_top_iter_begin) == 0) {
           storage.GetColor(near_top_iter_begin) = 1;
-          visitor.discover_vertex_Dejkstra(storage.GetIndexVertex(near_top_iter_begin), *this);
+          visitor.discover_vertex_Dejkstra(index_vert_from_iter, *this);
         }
       } else {
-        visitor.edge_not_relaxed({begin_top, storage.GetIndexVertex(near_top_iter_begin)}, near_top_iter_begin, *this);
+        visitor.edge_not_relaxed({begin_top, index_vert_from_iter}, near_top_iter_begin, *this);
       }
       near_top_iter_begin++;
     }

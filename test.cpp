@@ -9,11 +9,31 @@
 #include "LCAVisitors.hpp"
 #include "ShortestPathVisitors.hpp"
 
+template<typename CurGraph>
+void CreateGraphfromIfStream(int amount_edges, std::ifstream& read_stream, CurGraph& graph) {
+if constexpr (((std::is_base_of_v<EdgesWeight_MatrixNear<typename CurGraph::weight_type>, typename CurGraph::edges_type> && !std::is_same_v<typename CurGraph::weight_type, bool> ) || std::is_base_of_v<EdgesWeight_TopsEdges<typename CurGraph::weight_type>, typename CurGraph::edges_type>)) {
+  int vert_1, vert_2, weight;
+  for (std::size_t i = 0; i < amount_edges; i++) {
+    read_stream >> vert_1 >> vert_2 >> weight;
+    graph.AddEdge(vert_1, vert_2, weight);
+    std::cerr << "sadfsdasadf\n";
+  }
+}
+else{
+  int vert_1, vert_2;
+  for (std::size_t i = 0; i < amount_edges; i++) {
+    read_stream >> vert_1 >> vert_2;
+    graph.AddEdge(vert_1, vert_2);
+  }
+}
+  graph.PrintGraph();
+}
+
+
 void MakeTestGraph_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -22,12 +42,8 @@ void MakeTestGraph_TopEdges(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageTopsEdges<Edges_TopsEdges<bool>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2;
-        graph.AddEdge(vert_1, vert_2);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
       BFSShortestPathBetweenPair<graph_type> visitor(begin, end, amount_vetrex);
       graph.BFS<BFSShortestPathBetweenPair<graph_type>>(begin, visitor);
       assert((answer == visitor.deep[end]));
@@ -41,7 +57,6 @@ void MakeTestGraph_MatrixNear(const std::string &filename) {
   std::size_t amount_vetrex, amount_edges;
   int answer, begin, end;
 
-  int vert_1, vert_2;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -50,12 +65,8 @@ void MakeTestGraph_MatrixNear(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageMatrixNear<EdgesWeight_MatrixNear<bool>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2;
-        graph.AddEdge(vert_1, vert_2);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
       BFSShortestPathBetweenPair<graph_type> visitor(begin, end, amount_vetrex);
       graph.BFS<BFSShortestPathBetweenPair<graph_type>>(begin, visitor);
       assert((answer == visitor.deep[end]));
@@ -68,7 +79,6 @@ void TestDejkstra_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, weight;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -77,15 +87,18 @@ void TestDejkstra_TopEdges(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageTopsEdges<EdgesWeight_TopsEdges<int>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> weight;
-        graph.AddEdge(vert_1, vert_2, weight);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
       DejkstraVisitor<graph_type> visitor(begin);
       graph.Dejkstra<DejkstraVisitor<graph_type>>(begin, visitor);
-      assert((answer == graph.GetDeep(end)));
+
+      int algo_ans = graph.GetDepth(end);
+      if(algo_ans == INT_MAXIMUS) {
+        algo_ans = -1;
+      }
+
+      std::cerr << "answer = " << answer << " ans = " << algo_ans << "\n";
+      assert((answer == algo_ans));
     }
     myfile.close();
   }
@@ -96,7 +109,6 @@ void TestLCAUpDouble_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -105,12 +117,8 @@ void TestLCAUpDouble_TopEdges(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageTopsEdges<Edges_TopsEdges<bool>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2;
-        graph.AddEdge(vert_1, vert_2);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFSLCADoubleUp<graph_type> visitor(root, amount_vetrex);
@@ -126,7 +134,6 @@ void TestLCAFrakBender_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -135,12 +142,8 @@ void TestLCAFrakBender_TopEdges(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageTopsEdges<Edges_TopsEdges<bool>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2;
-        graph.AddEdge(vert_1, vert_2);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFSLCAFrakBender<graph_type> visitor(root, amount_vetrex);
@@ -156,21 +159,16 @@ void TestDinic_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, cap;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
       myfile >> amount_vetrex >> amount_edges >> answer;
       std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << " answer = "
                 << answer << "\n";
-      using graph_type = Graph<FlowNetworkStorageTopsEdges<EdgesFlow_TopsEdges<int>>>;
+      using graph_type = Graph<FlowNetworkStorageTopsEdges<EdgesFlow_TopsEdges<long long int>>>;
       graph_type graph(amount_vetrex, true);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> cap;
-        graph.AddEdge(vert_1, vert_2, cap);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFS_BFS_Dinic<graph_type> visitor(begin, end, amount_vetrex);
@@ -186,7 +184,6 @@ void TestDinic_MatrixNear(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, cap;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -195,12 +192,8 @@ void TestDinic_MatrixNear(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<FlowNetworkStorageMatrixNear<EdgesFlow_MatrixNear<int>>>;
       graph_type graph(amount_vetrex, true);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> cap;
-        graph.AddEdge(vert_1, vert_2, cap);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFS_BFS_Dinic<graph_type> visitor(begin, end, amount_vetrex);
@@ -216,9 +209,7 @@ void TestDejkstra_MatrixNear(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, weight;
   std::ifstream myfile(filename);
-
   if (myfile.is_open()) {
     while (!myfile.eof()) {
       myfile >> amount_vetrex >> amount_edges >> answer;
@@ -226,15 +217,16 @@ void TestDejkstra_MatrixNear(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageMatrixNear<EdgesWeight_MatrixNear<int>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> weight;
-        graph.AddEdge(vert_1, vert_2, weight);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
       DejkstraVisitor<graph_type> visitor(begin);
       graph.Dejkstra<DejkstraVisitor<graph_type>>(begin, visitor);
-      assert((answer == graph.GetDeep(end)));
+      int algo_ans = graph.GetDepth(end);
+      if(algo_ans == INT_MAXIMUS) {
+        algo_ans = -1;
+      }
+
+      assert((answer == algo_ans));
     }
     myfile.close();
   }
@@ -245,7 +237,6 @@ void TestLCA_MatrixNear(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -254,12 +245,8 @@ void TestLCA_MatrixNear(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<GraphStorageTopsEdges<Edges_TopsEdges<bool>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2;
-        graph.AddEdge(vert_1, vert_2);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFSLCADoubleUp<graph_type> visitor(root, amount_vetrex);
@@ -274,28 +261,27 @@ void TestLCA_MatrixNear(const std::string &filename) {
 void TestLoydWarshell_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
-
-  int vert_1, vert_2, weight;
   std::ifstream myfile(filename);
 
   if (myfile.is_open()) {
     while (!myfile.eof()) {
-      myfile >> amount_vetrex >> amount_edges >> answer;
-      std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << " answer = "
-                << answer << "\n";
+      myfile >> amount_vetrex >> amount_edges;
+      std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << "\n";
       using graph_type = Graph<GraphStorageTopsEdges<EdgesWeight_TopsEdges<int>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> weight;
-        graph.AddEdge(vert_1, vert_2, weight);
-      }
-      graph.PrintGraph();
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       FloydWarshallVisitor<graph_type> visitor(amount_vetrex);
       visitor.FloydWarshell(graph);
-      myfile >> begin >> end;
+      myfile >> begin >> end >> answer;
       do {
-        assert((answer == visitor.GetDist(begin, end)));
-        myfile >> begin >> end;
+        int algo_ans = visitor.GetDist(begin, end);
+        if(algo_ans == INT_MAXIMUS) {
+          algo_ans = -1;
+        }
+        std::cerr << answer << "    " << algo_ans << "\n";
+
+        assert((answer == algo_ans));
+        myfile >> begin >> end >> answer;
       } while (begin != -1);
     }
     myfile.close();
@@ -306,27 +292,23 @@ void TestLoydWarshell_TopEdges(const std::string &filename) {
 
 void TestFordFUlkerson_TopEdges(const std::string &filename) {
   std::string line;
-  int amount_vetrex, amount_edges, answer, begin, end;
+  int amount_vetrex, amount_edges, begin, end;
+  double answer;
 
-  int vert_1, vert_2, cap;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
       myfile >> amount_vetrex >> amount_edges >> answer;
       std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << " answer = "
                 << answer << "\n";
-      using graph_type = Graph<FlowNetworkStorageTopsEdges<EdgesFlow_TopsEdges<int>>>;
+      using graph_type = Graph<FlowNetworkStorageTopsEdges<EdgesFlow_TopsEdges<double>>>;
       graph_type graph(amount_vetrex, true);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> cap;
-        graph.AddEdge(vert_1, vert_2, cap);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFSFordFulkerson<graph_type> visitor(begin, end, amount_vetrex);
-      int ans = visitor.FordFUlkerson(begin, end, graph);
+      double ans = visitor.FordFUlkerson(begin, end, graph);
 
       std::cerr << "answer = " << answer << " ans = " << ans << "\n";
       assert((answer == ans));
@@ -339,26 +321,22 @@ void TestFordFUlkerson_MatrixNear(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, cap;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
       myfile >> amount_vetrex >> amount_edges >> answer;
       std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << " answer = "
                 << answer << "\n";
-      using graph_type = Graph<FlowNetworkStorageMatrixNear<EdgesFlow_MatrixNear<int>>>;
+      using graph_type = Graph<FlowNetworkStorageMatrixNear<EdgesFlow_MatrixNear<double>>>;
       graph_type graph(amount_vetrex, true);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> cap;
-        graph.AddEdge(vert_1, vert_2, cap);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
       int root = 0;
       DFSFordFulkerson<graph_type> visitor(begin, end, amount_vetrex);
       int ans = visitor.FordFUlkerson(begin, end, graph);
 
+      std::cerr << "answer = " << answer << " ans = " << ans << "\n";
       assert((answer == ans));
     }
     myfile.close();
@@ -369,7 +347,6 @@ void TestAdmondKarp_TopEdges(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, cap;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -378,14 +355,9 @@ void TestAdmondKarp_TopEdges(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<FlowNetworkStorageTopsEdges<EdgesFlow_TopsEdges<int>>>;
       graph_type graph(amount_vetrex, true);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> cap;
-        graph.AddEdge(vert_1, vert_2, cap);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
-      int root = 0;
       BFSAdmondKarp<graph_type> visitor(begin, end, amount_vetrex);
       int ans = visitor.AdmondKarp(begin, end, graph);
 
@@ -400,7 +372,6 @@ void TestAdmondKarp_MatrixNear(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, cap;
   std::ifstream myfile(filename);
   if (myfile.is_open()) {
     while (!myfile.eof()) {
@@ -409,14 +380,9 @@ void TestAdmondKarp_MatrixNear(const std::string &filename) {
                 << answer << "\n";
       using graph_type = Graph<FlowNetworkStorageMatrixNear<EdgesFlow_MatrixNear<int>>>;
       graph_type graph(amount_vetrex, true);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> cap;
-        graph.AddEdge(vert_1, vert_2, cap);
-      }
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       myfile >> begin >> end;
-      graph.PrintGraph();
 
-      int root = 0;
       BFSAdmondKarp<graph_type> visitor(begin, end, amount_vetrex);
       int ans = visitor.AdmondKarp(begin, end, graph);
 
@@ -430,27 +396,20 @@ void TestLoydWarshell_MatrixNear(const std::string &filename) {
   std::string line;
   int amount_vetrex, amount_edges, answer, begin, end;
 
-  int vert_1, vert_2, weight;
   std::ifstream myfile(filename);
-
   if (myfile.is_open()) {
     while (!myfile.eof()) {
-      myfile >> amount_vetrex >> amount_edges >> answer;
-      std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << " answer = "
-                << answer << "\n";
+      myfile >> amount_vetrex >> amount_edges;
+      std::cerr << "\n" << "amount_vetrex = " << amount_vetrex << " amount_edges = " << amount_edges << "\n";
       using graph_type = Graph<GraphStorageMatrixNear<EdgesFlow_MatrixNear<int>>>;
       graph_type graph(amount_vetrex);
-      for (std::size_t i = 0; i < amount_edges; i++) {
-        myfile >> vert_1 >> vert_2 >> weight;
-        graph.AddEdge(vert_1, vert_2, weight);
-      }
-      graph.PrintGraph();
+      CreateGraphfromIfStream<graph_type>(amount_edges, myfile, graph);
       FloydWarshallVisitor<graph_type> visitor(amount_vetrex);
       visitor.FloydWarshell(graph);
-      myfile >> begin >> end;
+      myfile >> begin >> end  >> answer;
       do {
         assert((answer == visitor.GetDist(begin, end)));
-        myfile >> begin >> end;
+        myfile >> begin >> end  >> answer;
       } while (begin != -1);
     }
     myfile.close();

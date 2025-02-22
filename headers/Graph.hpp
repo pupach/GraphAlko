@@ -49,15 +49,15 @@ class Graph {
     return storage.GetWeightFromIter(iter);
   }
 
-  int GetDeep(int id) {
-    return storage.GetDeep(id);
+  int GetDepth(int id) {
+    return storage.GetDepth(id);
   }
 
   int &GetColor(int id) {
     return storage.GetColor(id);
   }
 
-  int &GetFlow(int from, int to) {
+  weight_type &GetFlow(int from, int to) {
     return storage.GetFlow(from, to);
   }
 
@@ -81,8 +81,8 @@ class Graph {
     storage.ConstructColor(default_color);
   }
 
-  void ConstructDeep(int default_color = INT_MAXIMUS) {
-    storage.ConstructDeep(default_color);
+  void ConstructDepth(int default_color = INT_MAXIMUS) {
+    storage.ConstructDepth(default_color);
   }
 
   int &GetPredecessor(int id) {
@@ -99,9 +99,11 @@ class Graph {
     std::cerr << "PrintGraph end\n";
   }
 
-  void foo();
+
   template<typename... Args>
   void AddEdge(int f, int s, Args &&... construct_args);
+
+  void AddEdge(int f, int s, weight_type weight);
 
   template<typename CurDFSVisitor>
   void DFS(int begin_top, CurDFSVisitor &visitor);

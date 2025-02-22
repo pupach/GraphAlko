@@ -1,0 +1,5 @@
+PROJECT_NAME           = @PROJECT_NAME@
+PROJECT_NUMBER         = @PROJECT_VERSION@
+OUTPUT_DIRECTORY       = /mnt/c/Users/catboy/CLionProjects/GraphAlko/doc
+INPUT                  = /mnt/c/Users/catboy/CLionProjects/GraphAlko/headers /mnt/c/Users/catboy/CLionProjects/GraphAlko/headers/VisitorsHeaders
+RECURSIVE              = YES

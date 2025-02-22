@@ -30,6 +30,9 @@ class FloydWarshallVisitor {
   }
 
   int GetDist(int from, int to) {
+    if((from != to) && dist[from][to] == 0) {
+      return -1;
+    }
     return dist[from][to];
   }
 
